@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Страстоцвет — игра: собери оранжерею</title>
+  <style>
+    :root {
+      --bg: #F6F1E7;
+      --bg-panel: #EFE9DA;
+      --bg-card: #FFFDF8;
+      --bg-card-hover: #FBF6EA;
+      --bg-selected: #E4EFE6;
+      --green-dark: #214031;
+      --green-mid: #355E48;
+      --green-soft: #5A7A66;
+      --gold: #B98C4B;
+      --gold-soft: #E5D4B3;
+      --text-main: #232824;
+      --text-muted: #5F5C52;
+      --border: #DDD5C4;
+      --shadow: 0 10px 30px rgba(33, 64, 49, 0.08);
+      --radius: 16px;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(185, 140, 75, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 88% 82%, rgba(33, 64, 49, 0.07) 0%, transparent 45%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1200px;
+      min-height: 700px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      padding: 34px 42px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--green-dark);
+      color: #FFFDF8;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--green-mid);
+      transform: translateY(-1px);
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #FFFDF8;
+      box-shadow: 0 4px 14px rgba(185, 140, 75, 0.35);
+    }
+
+    .btn-gold:hover:not(:disabled) {
+      background: #A4793B;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-panel);
+      color: var(--green-dark);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #E6DEC9;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--green-mid);
+      border-color: var(--border);
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-panel);
+    }
+
+    .cover-screen {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(185, 140, 75, 0.11), transparent 55%),
+        var(--bg-card);
+      padding: 56px 32px;
+    }
+
+    .cover-ornament { width: 92px; height: 92px; margin-bottom: 20px; }
+
+    .cover-title {
+      font-family: var(--serif);
+      font-size: clamp(42px, 6vw, 68px);
+      font-weight: 700;
+      color: var(--green-dark);
+      line-height: 1.08;
+    }
+
+    .cover-subtitle {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(20px, 2.5vw, 26px);
+      color: var(--green-soft);
+      margin-top: 8px;
+    }
+
+    .cover-divider {
+      width: 90px;
+      height: 2px;
+      background: var(--gold);
+      margin: 26px auto;
+    }
+
+    .cover-desc {
+      max-width: 600px;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+
+    .cover-book {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 34px;
+    }
+
+    .rules-screen { justify-content: space-between; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+    }
+
+    .page-title {
+      font-family: var(--serif);
+      font-size: clamp(25px, 3vw, 33px);
+      color: var(--green-dark);
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: auto 0;
+    }
+
+    .rule-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .rule-num {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--green-dark);
+      color: #FFFDF8;
+      font-family: var(--serif);
+      font-size: 19px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rule-text { font-size: 15.5px; }
+
+    .rules-note {
+      margin-top: 20px;
+      padding: 12px 18px;
+      background: var(--bg-panel);
+      border-left: 3px solid var(--gold);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .footer-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .game-screen { padding: 24px 32px; }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .game-header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .progress-steps {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: var(--bg);
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .step-dot.done {
+      background: var(--green-dark);
+      border-color: var(--green-dark);
+      color: #FFFDF8;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.2fr;
+      gap: 24px;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .sills-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .sill-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 13px 13px;
+    }
+
+    .sill-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--green-soft);
+      margin-bottom: 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sill-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .plant-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 5px;
+      min-height: 94px;
+      transition: all 0.16s ease;
+      font-family: var(--sans);
+    }
+
+    .plant-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .plant-card.selected {
+      background: var(--bg-selected);
+      border-color: var(--green-dark);
+      box-shadow: 0 3px 10px rgba(33, 64, 49, 0.12);
+    }
+
+    .plant-card.viewing {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .card-check {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--green-dark);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plant-card.selected .card-check { display: flex; }
+
+    .card-icon { width: 52px; height: 54px; }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green-dark);
+      line-height: 1.15;
+    }
+
+    .showcase-window {
+      background: linear-gradient(180deg, #FAF6EC 0%, #EFE9DA 100%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .showcase-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+    }
+
+    .showcase-empty-arch {
+      width: 170px;
+      height: 190px;
+      border-radius: 90px 90px 14px 14px;
+      border: 2px dashed #C7BFA9;
+      background: rgba(255, 253, 248, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--green-soft);
+    }
+
+    .showcase-empty-title {
+      font-family: var(--serif);
+      font-size: 24px;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .showcase-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .showcase-model-box {
+      background: radial-gradient(circle at 50% 42%, #FFFFFF 0%, #F4EFE2 72%, #E8E0CD 100%);
+      border: 1.5px solid #D4CBB4;
+      border-radius: 18px;
+      padding: 18px 20px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .showcase-arch-bg {
+      width: 225px;
+      height: 225px;
+      border-radius: 112px 112px 16px 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(235, 242, 236, 0.68) 100%);
+      border: 2px solid #D9D0BA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .showcase-arch-bg svg {
+      width: 190px;
+      height: 196px;
+      filter: drop-shadow(0 6px 10px rgba(33, 64, 49, 0.12));
+    }
+
+    .showcase-sill-tag {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--green-soft);
+      background: rgba(255, 253, 248, 0.92);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    .showcase-story {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+
+    .story-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 9px;
+    }
+
+    .story-title {
+      font-family: var(--serif);
+      font-size: 24px;
+      color: var(--green-dark);
+      line-height: 1.2;
+    }
+
+    .story-poet {
+      background: var(--bg-panel);
+      color: var(--green-dark);
+      border: 1px solid var(--gold-soft);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 999px;
+    }
+
+    .story-main { font-size: 15px; margin-bottom: 12px; }
+
+    .story-kushlina {
+      background: var(--bg);
+      border-left: 3px solid var(--gold);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13.8px;
+      color: var(--text-muted);
+    }
+
+    .story-kushlina strong { color: var(--green-dark); }
+
+    .showcase-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .ready-hint { font-size: 13.5px; color: var(--text-muted); }
+    .ready-hint.ready { color: var(--green-dark); font-weight: 600; }
+
+    .greenhouse-screen {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 245, 214, 0.75) 0%, transparent 55%),
+        linear-gradient(180deg, #FBF8F0 0%, #EFE9DA 100%);
+      justify-content: space-between;
+    }
+
+    .conservatory-frame {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(235, 242, 236, 0.55) 68%, #E5DEC9 68%, #DDD4BA 100%);
+      border: 2px solid #CFC6AE;
+      border-radius: 26px 26px 16px 16px;
+      padding: 28px 24px 22px;
+      margin: auto 0;
+    }
+
+    .conservatory-subtitle {
+      text-align: center;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 17px;
+      color: var(--green-mid);
+      margin-bottom: 22px;
+    }
+
+    .final-slots {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .final-plant-card {
+      background: rgba(255, 253, 248, 0.94);
+      border: 1.5px solid #CFC6AE;
+      border-radius: 16px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 16px rgba(33, 64, 49, 0.08);
+    }
+
+    .final-plant-card:hover { transform: translateY(-4px); border-color: var(--green-dark); }
+    .final-plant-card.active-card { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(185, 140, 75, 0.35); }
+
+    .final-sill-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--green-soft);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .final-plant-svg {
+      width: 138px;
+      height: 144px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 5px 8px rgba(33, 64, 49, 0.12));
+    }
+
+    .final-plant-name {
+      font-family: var(--serif);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--green-dark);
+      line-height: 1.2;
+    }
+
+    .final-plant-poet { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .final-story-drawer {
+      margin-top: 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: none;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .final-story-drawer.open { display: block; }
+
+    .final-story-tip {
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 14px;
+    }
+
+    .extra-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 16px;
+      margin: 8px 0 auto;
+    }
+
+    .extra-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .extra-card-title {
+      font-family: var(--serif);
+      font-size: 20px;
+      color: var(--green-dark);
+      border-bottom: 1px solid var(--gold-soft);
+      padding-bottom: 6px;
+    }
+
+    .extra-card-text { font-size: 14.5px; }
+
+    @media (max-width: 960px) {
+      .game-layout, .rules-grid { grid-template-columns: 1fr; }
+      .final-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 8px; }
+      .screen { padding: 20px 14px; }
+      .game-screen { padding: 16px 12px; }
+      .sill-cards { gap: 6px; }
+      .plant-card { padding: 8px 4px; min-height: 84px; }
+      .card-name { font-size: 12px; }
+      .showcase-arch-bg { width: 180px; height: 180px; }
+      .showcase-arch-bg svg { width: 150px; height: 155px; }
+      .final-slots { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+
+    <section id="screen-cover" class="screen cover-screen active">
+      <svg class="cover-ornament" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+        <circle cx="50" cy="50" r="44" stroke="#B98C4B" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <circle cx="50" cy="50" r="24" stroke="#214031" stroke-width="1.5"/>
+        <path d="M50 14 C56 28, 56 36, 50 50 C44 36, 44 28, 50 14Z" fill="#6F568C" opacity="0.85"/>
+        <path d="M50 86 C56 72, 56 64, 50 50 C44 64, 44 72, 50 86Z" fill="#6F568C" opacity="0.85"/>
+        <path d="M14 50 C28 44, 36 44, 50 50 C36 56, 28 56, 14 50Z" fill="#6F568C" opacity="0.85"/>
+        <path d="M86 50 C72 44, 64 44, 50 50 C64 56, 72 56, 86 50Z" fill="#6F568C" opacity="0.85"/>
+        <path d="M24 24 C36 30, 42 36, 50 50 C36 42, 30 36, 24 24Z" fill="#355E48" opacity="0.8"/>
+        <path d="M76 24 C64 30, 58 36, 50 50 C64 42, 70 36, 76 24Z" fill="#355E48" opacity="0.8"/>
+        <path d="M24 76 C36 70, 42 64, 50 50 C36 58, 30 64, 24 76Z" fill="#355E48" opacity="0.8"/>
+        <path d="M76 76 C64 70, 58 64, 50 50 C64 58, 70 64, 76 76Z" fill="#355E48" opacity="0.8"/>
+        <circle cx="50" cy="50" r="7" fill="#B98C4B"/>
+        <circle cx="50" cy="50" r="3" fill="#FFFDF8"/>
+      </svg>
+
+      <h1 class="cover-title">Страстоцвет</h1>
+      <div class="cover-subtitle">игра: собери оранжерею</div>
+      <div class="cover-divider"></div>
+      <p class="cover-desc">
+        Растения петербургских подоконников и то, как их воспели (и высмеяли) в русской литературе Серебряного века.
+      </p>
+      <p class="cover-book">
+        По книге Ольги Кушлиной «Страстоцвет, или Петербургские подоконники»
+      </p>
+      <button type="button" id="btn-start" class="btn btn-primary">Начать игру →</button>
+    </section>
+
+    <section id="screen-rules" class="screen rules-screen">
+      <div>
+        <div class="page-header">
+          <h2 class="page-title">Как собрать оранжерею</h2>
+        </div>
+
+        <div class="rules-grid">
+          <div class="rule-card">
+            <div class="rule-num">1</div>
+            <p class="rule-text">
+              Слева четыре подоконника, на каждом три растения на выбор. На карточках только названия — выбирай по любопытству.
+            </p>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">2</div>
+            <p class="rule-text">
+              Нажми на растение: справа в большом окне появится сам цветок и его литературная история — кто его воспел, поругал или спрятал в стихах.
+            </p>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">3</div>
+            <p class="rule-text">
+              С каждого подоконника можно взять только одно растение. Выбор можно в любой момент поменять.
+            </p>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">4</div>
+            <p class="rule-text">
+              Когда выберешь все 4 растения, откроется твоя готовая оранжерея. Чтобы собрать другую, нажми «Заново».
+            </p>
+          </div>
+        </div>
+
+        <div class="rules-note">
+          Подсказка: пока ты изучаешь растения, оранжерея остаётся в секрете — она откроется целиком в самом конце, когда соберёшь все 4 цветка.
+        </div>
+      </div>
+
+      <div class="footer-nav">
+        <button type="button" id="btn-to-cover" class="btn btn-secondary">← На обложку</button>
+        <button type="button" id="btn-to-game" class="btn btn-primary">К игре →</button>
+      </div>
+    </section>
+
+    <section id="screen-game" class="screen game-screen">
+      <div class="game-header">
+        <h2 class="page-title">Собери оранжерею</h2>
+        <div class="game-header-actions">
+          <div id="progress-steps" class="progress-steps"></div>
+          <button type="button" id="btn-rules-top" class="btn btn-ghost">Правила</button>
+        </div>
+      </div>
+
+      <div class="game-layout">
+        <div id="sills-container" class="sills-column"></div>
+
+        <div class="showcase-window">
+          <div id="showcase-content" style="flex:1; display:flex; flex-direction:column;"></div>
+
+          <div class="showcase-footer">
+            <button type="button" id="btn-reset" class="btn btn-secondary">↻ Заново</button>
+            <span id="ready-hint" class="ready-hint">Выбери по 1 растению с каждого подоконника</span>
+            <button type="button" id="open-greenhouse-btn" class="btn btn-primary" disabled>Открыть оранжерею →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-greenhouse" class="screen greenhouse-screen">
+      <div class="page-header">
+        <h2 class="page-title">Моя оранжерея</h2>
+        <button type="button" id="btn-edit-choice" class="btn btn-ghost">← Изменить растения</button>
+      </div>
+
+      <div class="conservatory-frame">
+        <p class="conservatory-subtitle">
+          Четыре петербургских подоконника собрались под одной стеклянной крышей
+        </p>
+
+        <div id="final-slots" class="final-slots"></div>
+        <div id="final-story-drawer" class="final-story-drawer"></div>
+
+        <p class="final-story-tip">Нажми на любой цветок в оранжерее, чтобы вспомнить его историю.</p>
+      </div>
+
+      <div class="footer-nav">
+        <button type="button" id="btn-new-gh" class="btn btn-secondary">↻ Собрать новую оранжерею</button>
+        <button type="button" id="btn-to-extra" class="btn btn-primary">Ещё растения →</button>
+      </div>
+    </section>
+
+    <section id="screen-extra" class="screen">
+      <div class="page-header">
+        <h2 class="page-title">Ещё в оранжерее: растения из книги</h2>
+      </div>
+
+      <div id="extra-grid" class="extra-grid"></div>
+
+      <div class="footer-nav">
+        <button type="button" id="btn-back-extra" class="btn btn-primary">← К оранжерее</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const SILLS = [
+      {
+        id: 1,
+        title: "Подоконник I · Парадная гостиная",
+        shortTitle: "Подоконник I",
+        plants: [
+          {
+            id: "passiflora",
+            name: "Страстоцвет",
+            fullTitle: "Страстоцвет (пассифлора)",
+            poet: "Тэффи",
+            main: "Берлинский сборник Тэффи 1923 года назван латиницей, «Passiflora», а лучшее стихотворение в нём — по-русски: «Страстоцвет». К тому времени цветок был для неё воспоминанием о Петербурге, откуда пришлось бежать.",
+            kushlina: "В парадных комнатах он вился по шпалере у окна. А в самом Петербурге он остался на чугунной ограде Михайловского сада у Спаса на Крови."
+          },
+          {
+            id: "latania",
+            name: "Латания",
+            fullTitle: "Латания (пальма)",
+            poet: "Брюсов",
+            main: "«Лопасти латаний» — образ из ранних стихов Брюсова, которые современники считали бессмыслицей. Кушлина показывает, что это просто его обстановка: зальце в доме матери, кафельные печи и большие латании.",
+            kushlina: "Чиновник С. Ф. Светлов записал в 1892 году: у окон принято ставить пальмочки, латании и драцены. Взрослая пальма на берлинском рынке стоила 30 марок, дюжина фикусов — 6."
+          },
+          {
+            id: "ficus",
+            name: "Фикус",
+            fullTitle: "Фикус",
+            poet: "Анненский",
+            main: "В стихотворении Анненского «Трактир жизни» фикус — символ пошлости и некрасоты. Это единственное растение, для которого у поэта-цветолюба не нашлось доброго слова.",
+            kushlina: "Фикус считался старомодным уже в конце XIX века. Он стоял там, где много и сытно ели: в трактирах и на господских кухнях. Примета и сегодня обещает, что на кухне он убережёт от голода."
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Подоконник II · Эркер и жардиньерка",
+        shortTitle: "Подоконник II",
+        plants: [
+          {
+            id: "orchid",
+            name: "Орхидея",
+            fullTitle: "Орхидея",
+            poet: "«ночная фиалка» символистов",
+            main: "Главная шутка книги: не декаденты создали моду на орхидею, а орхидея «породила» декадента. В русской поэзии её называли «ночной фиалкой», а о Сологубе иронично сказано, что ему «пожаловали» орхидею.",
+            kushlina: "С греческого название переводится не вполне прилично: корень похож на то, что дало растению имя. Возможно, поэтому поэты предпочитали говорить «ночная фиалка»."
+          },
+          {
+            id: "cyclamen",
+            name: "Цикламен",
+            fullTitle: "Цикламен",
+            poet: "Сологуб",
+            main: "В России он быстро оброс загадочностью и потерял русские имена «дряква» и «альпийская фиалка». Украшал жардиньерки «роковых женщин», а его запах дал название приторным духам.",
+            kushlina: "В «Мелком бесе» Сологуба Людмила Рутилова брызгает на гимназиста Сашу духами «Цикламен» — одна из сцен, которую Кушлина разбирает как «обольщение» запахом."
+          },
+          {
+            id: "azalea",
+            name: "Азалия",
+            fullTitle: "Азалия",
+            poet: "Фет и его «Рододендрон»",
+            main: "Рифма «азалий — печали» к началу XX века стала почти такой же банальной, как «роза — мороза». Азалии — тот же рододендрон, а фетовский «Рододендрон» напечатали лишь через 45 лет после написания.",
+            kushlina: "В богатых домах азалии, цикламены и модная тубероза цвели на жардиньерке на фоне папоротников и хвойных."
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "Подоконник III · Кухня и комната прислуги",
+        shortTitle: "Подоконник III",
+        plants: [
+          {
+            id: "geranium",
+            name: "Герань",
+            fullTitle: "Герань",
+            poet: "Пётр Потёмкин",
+            main: "Пётр Потёмкин назвал сборник «Герань» и позволил себе простое счастье: цветы на окне — к счастью. После революции герань вместе с канарейкой объявили приметой мещанского быта.",
+            kushlina: "Настоящее имя цветка — пеларгония («аист»), а герань значит «журавль»: птиц перепутали французы. Скажи «пеларгония» — и рифма, и песня не вышли бы."
+          },
+          {
+            id: "balsamin",
+            name: "Бальзамин",
+            fullTitle: "Бальзамин («Ванька мокрый»)",
+            poet: "Вероника Тушнова",
+            main: "За жадность к воде его прозвали «Ванькой мокрым». Это цветок городских трущоб, который один раз мелькнул в поэзии — в «оттепельных» стихах Вероники Тушновой, где она за него заступается.",
+            kushlina: "Семена дикого бальзамина привезли из Туркестана в 1870-х. В Ботаническом саду он прижился как сорняк, а дети несли его семена домой."
+          },
+          {
+            id: "ivy",
+            name: "Плющ",
+            fullTitle: "Плющ",
+            poet: "двор-колодец",
+            main: "Плющ с ситцевой занавеской — защита дома от чужих глаз. Нетребовательный «унылый зануда» был единственной отрадой комнат, выходивших во дворы-колодцы.",
+            kushlina: "Суеверие велит: если дом покидают мужчины, виноват плющ. Кушлина шутит, что дело, может быть, не в плюще."
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: "Подоконник IV · Тёмный угол и «болото»",
+        shortTitle: "Подоконник IV",
+        plants: [
+          {
+            id: "fern",
+            name: "Папоротник",
+            fullTitle: "Папоротник",
+            poet: "Черубина де Габриак",
+            main: "Невидимый и горящий, как огонь, цветок папоротника — в книге это сама Черубина де Габриак, главная мистификация русской поэзии XX века. Анненский писал о ней в предсмертной статье: «Пусть она даже мираж».",
+            kushlina: "У Мандельштама — «зелёной ночью папоротник чёрный». Кушлина ищет «самый символистский цветок»: в русской поэзии он белый, холодный, мёртвый и таящий опасность, как у Сологуба и Блока."
+          },
+          {
+            id: "nymphaea",
+            name: "Нимфея",
+            fullTitle: "Нимфея (водяная лилия)",
+            poet: "Мирра Лохвицкая",
+            main: "В стихотворении «Мёртвая роза» Лохвицкая называет себя холодной нимфеей на зыбких волнах. Бальмонт посвятил ей «Будем как солнце», а она воспела его в стихах как «Лионеля», в чьих строфах дышит запах лилий водяных.",
+            kushlina: "Кушлина называет её Царевной-лягушкой на болоте — «Нимфеей Лохвицкой». Болотные травы стали её поэтическим почерком."
+          },
+          {
+            id: "cryptomeria",
+            name: "Криптомерия",
+            fullTitle: "Криптомерия",
+            poet: "Валерий Брюсов",
+            main: "Раздел «Криптомерии» в первой книге Брюсова «Chefs d’œuvre» (1895) критики встретили в штыки: слишком много эротики и экзотики. Брат поэта уверял, что «пресловутые» криптомерии Брюсов взял из растений, которые выращивала мать.",
+            kushlina: "Криптомерии пришли на смену дорогим араукариям, которые «в неволе не размножаются». Так мода дошла из богатых домов до простых квартир, а потом и до рифм вроде «атмосфере — криптомерий»."
+          }
+        ]
+      }
+    ];
+
+    const EXTRA_PLANTS = [
+      { name: "Роза", text: "Глава «Розы насущные». Китайская роза в кадке — не роза для поэтов. У Блока роза — эмблема печали." },
+      { name: "Лилия и хризантема", text: "Гиппиус ответила на красные лилии Минского жёлтыми хризантемами. Запах лилий вызывал у Анненского приступы астмы." },
+      { name: "Кактус", text: "Брюсов мечтал о тропиках и дротике, а сам сидел дома на Цветном бульваре, в тени криптомерий." },
+      { name: "Сирень", text: "Любимое растение Северянина; ветку сирени он отправил Тэффи в 1925 году вместе с сонетом." },
+      { name: "Вервэна", text: "Название сборника Северянина и его «Ликёр из вервэны» — грёзэркин ликёр, какого не бывает на свете." },
+      { name: "Асфодель", text: "Цветок царства мёртвых: «киммерийские асфодели» у Мандельштама («Меганом»), позже у Бродского." },
+      { name: "Эдельвейс", text: "Белый холодный цветок символистов. Горький в «Дачниках» стилизует стихотворение в прозе под декадентскую «красивость»." }
+    ];
+
+    function getPlantSvg(id) {
+      const pot = `
+        <ellipse cx="70" cy="140" rx="28" ry="5" fill="rgba(33, 64, 49, 0.14)"/>
+        <path d="M46 108 L94 108 L86 140 L54 140 Z" fill="#C17852" stroke="#854B2C" stroke-width="2"/>
+        <path d="M51 112 L57 137" stroke="#D99873" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+        <rect x="42" y="101" width="56" height="9" rx="3.5" fill="#D18962" stroke="#854B2C" stroke-width="2"/>
+        <ellipse cx="70" cy="101" rx="23" ry="3.5" fill="#5A4232"/>
+      `;
+
+      const models = {
+        passiflora: `
+          ${pot}
+          <path d="M52 101 L52 24 M70 101 L70 16 M88 101 L88 24 M46 42 L94 42 M46 66 L94 66 M46 88 L94 88" stroke="#9B8260" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M70 101 C52 86, 86 70, 56 54 C44 46, 62 32, 82 32" stroke="#2E5940" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M82 32 C94 30, 98 22, 92 18 C88 15, 86 22, 90 24" stroke="#4D8060" stroke-width="1.6" fill="none"/>
+          <path d="M56 76 C43 72, 38 64, 44 60" stroke="#4D8060" stroke-width="1.6" fill="none"/>
+          <path d="M54 80 C42 74, 34 82, 42 89 C46 92, 52 88, 54 80Z" fill="#356649" stroke="#214031" stroke-width="1.2"/>
+          <path d="M84 68 C96 62, 104 70, 96 77 C92 80, 86 76, 84 68Z" fill="#3F7857" stroke="#214031" stroke-width="1.2"/>
+          <path d="M52 48 C40 41, 34 49, 41 56 C46 59, 50 54, 52 48Z" fill="#4B8B66" stroke="#214031" stroke-width="1.2"/>
+          <g transform="translate(76, 38)">
+            <circle cx="0" cy="0" r="24" fill="#FAF6FF" stroke="#6B528A" stroke-width="1.4"/>
+            <path d="M0 -24 L5 -8 L23 -7 L9 4 L15 21 L0 11 L-15 21 L-9 4 L-23 -7 L-5 -8 Z" fill="#EFE6FA" stroke="#7A5E9E" stroke-width="1"/>
+            <circle cx="0" cy="0" r="15" fill="none" stroke="#5A3F7A" stroke-width="4" stroke-dasharray="2 2"/>
+            <circle cx="0" cy="0" r="9" fill="#FFFDF7" stroke="#5A3F7A" stroke-width="1.5"/>
+            <path d="M-6 0 L6 0 M0 -6 L0 6 M-4 -4 L4 4 M-4 4 L4 -4" stroke="#D9A83B" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="0" cy="0" r="3" fill="#466E51"/>
+          </g>
+        `,
+        latania: `
+          ${pot}
+          <path d="M70 101 L70 64 M66 101 L58 66 M74 101 L82 66" stroke="#426E52" stroke-width="3.2" stroke-linecap="round"/>
+          <g transform="translate(52, 62) rotate(-28)">
+            <path d="M0 10 C-26 -8, -28 -34, 0 -42 C28 -34, 26 -8, 0 10Z" fill="#3C7050" stroke="#214031" stroke-width="1.4"/>
+            <path d="M0 10 L-14 -26 M0 10 L-6 -36 M0 10 L0 -40 M0 10 L6 -36 M0 10 L14 -26" stroke="#659D7B" stroke-width="1.2"/>
+          </g>
+          <g transform="translate(88, 62) rotate(28)">
+            <path d="M0 10 C-26 -8, -28 -34, 0 -42 C28 -34, 26 -8, 0 10Z" fill="#356347" stroke="#214031" stroke-width="1.4"/>
+            <path d="M0 10 L-14 -26 M0 10 L-6 -36 M0 10 L0 -40 M0 10 L6 -36 M0 10 L14 -26" stroke="#659D7B" stroke-width="1.2"/>
+          </g>
+          <g transform="translate(70, 52)">
+            <path d="M0 14 C-32 -8, -32 -38, 0 -44 C32 -38, 32 -8, 0 14Z" fill="#4B8562" stroke="#214031" stroke-width="1.5"/>
+            <path d="M0 14 L-18 -24 M0 14 L-9 -36 M0 14 L0 -42 M0 14 L9 -36 M0 14 L18 -24" stroke="#80B896" stroke-width="1.3"/>
+          </g>
+        `,
+        ficus: `
+          ${pot}
+          <path d="M70 101 L70 34" stroke="#6C523D" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M70 76 L50 64 M70 62 L92 52 M70 46 L52 34" stroke="#6C523D" stroke-width="2.5" stroke-linecap="round"/>
+          <g transform="translate(42, 62) rotate(-25)">
+            <ellipse cx="0" cy="0" rx="20" ry="10" fill="#274E38" stroke="#183324" stroke-width="1.3"/>
+            <path d="M-16 0 L17 0" stroke="#538568" stroke-width="1.4"/>
+            <ellipse cx="-3" cy="-3" rx="8" ry="2" fill="rgba(255,255,255,0.16)"/>
+          </g>
+          <g transform="translate(96, 54) rotate(22)">
+            <ellipse cx="0" cy="0" rx="21" ry="10.5" fill="#2E5D43" stroke="#183324" stroke-width="1.3"/>
+            <path d="M-17 0 L18 0" stroke="#5E9475" stroke-width="1.4"/>
+            <ellipse cx="-2" cy="-3" rx="9" ry="2.2" fill="rgba(255,255,255,0.18)"/>
+          </g>
+          <g transform="translate(46, 36) rotate(-35)">
+            <ellipse cx="0" cy="0" rx="18" ry="9" fill="#386E50" stroke="#183324" stroke-width="1.3"/>
+            <path d="M-14 0 L15 0" stroke="#6BA383" stroke-width="1.3"/>
+          </g>
+          <g transform="translate(88, 30) rotate(35)">
+            <ellipse cx="0" cy="0" rx="16" ry="8.5" fill="#3F7A59" stroke="#183324" stroke-width="1.3"/>
+            <path d="M-13 0 L14 0" stroke="#75AE8E" stroke-width="1.3"/>
+          </g>
+          <g transform="translate(70, 20)">
+            <ellipse cx="0" cy="0" rx="9" ry="16" fill="#4A8A66" stroke="#183324" stroke-width="1.3"/>
+            <path d="M0 13 L0 -13" stroke="#85BF9D" stroke-width="1.4"/>
+            <ellipse cx="-2" cy="-3" rx="2.5" ry="6" fill="rgba(255,255,255,0.2)"/>
+          </g>
+        `,
+        orchid: `
+          ${pot}
+          <path d="M52 101 C42 90, 36 86, 42 80 C50 82, 60 92, 66 101Z" fill="#2D573F" stroke="#1C3929" stroke-width="1.2"/>
+          <path d="M88 101 C98 90, 104 86, 98 80 C90 82, 80 92, 74 101Z" fill="#376B4E" stroke="#1C3929" stroke-width="1.2"/>
+          <path d="M68 101 C64 72, 68 46, 86 28 C94 20, 104 20, 108 26" stroke="#3B6E51" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+          <g transform="translate(68, 56) scale(0.95)">
+            <ellipse cx="0" cy="-10" rx="6" ry="10" fill="#E6B8D6" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="-10" cy="-1" rx="9" ry="6" transform="rotate(-15 -10 -1)" fill="#DF9EC7" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="10" cy="-1" rx="9" ry="6" transform="rotate(15 10 -1)" fill="#DF9EC7" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="-6" cy="9" rx="6" ry="8" transform="rotate(20 -6 9)" fill="#E6B8D6" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="6" cy="9" rx="6" ry="8" transform="rotate(-20 6 9)" fill="#E6B8D6" stroke="#9B5683" stroke-width="1"/>
+            <circle cx="0" cy="2" r="4.5" fill="#9E3B76"/>
+            <circle cx="0" cy="1" r="2" fill="#F4CF5B"/>
+          </g>
+          <g transform="translate(88, 32) scale(0.85)">
+            <ellipse cx="0" cy="-10" rx="6" ry="10" fill="#ECC7DF" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="-10" cy="-1" rx="9" ry="6" transform="rotate(-15 -10 -1)" fill="#E4A9CE" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="10" cy="-1" rx="9" ry="6" transform="rotate(15 10 -1)" fill="#E4A9CE" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="-6" cy="9" rx="6" ry="8" transform="rotate(20 -6 9)" fill="#ECC7DF" stroke="#9B5683" stroke-width="1"/>
+            <ellipse cx="6" cy="9" rx="6" ry="8" transform="rotate(-20 6 9)" fill="#ECC7DF" stroke="#9B5683" stroke-width="1"/>
+            <circle cx="0" cy="2" r="4.5" fill="#9E3B76"/>
+            <circle cx="0" cy="1" r="2" fill="#F4CF5B"/>
+          </g>
+          <circle cx="107" cy="25" r="5" fill="#C97AA9" stroke="#8C4872" stroke-width="1"/>
+        `,
+        cyclamen: `
+          ${pot}
+          <ellipse cx="48" cy="92" rx="14" ry="9" transform="rotate(-15 48 92)" fill="#284F39" stroke="#183324" stroke-width="1.2"/>
+          <ellipse cx="48" cy="92" rx="8" ry="4" transform="rotate(-15 48 92)" fill="none" stroke="#84B395" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <ellipse cx="92" cy="92" rx="14" ry="9" transform="rotate(15 92 92)" fill="#284F39" stroke="#183324" stroke-width="1.2"/>
+          <ellipse cx="92" cy="92" rx="8" ry="4" transform="rotate(15 92 92)" fill="none" stroke="#84B395" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <ellipse cx="70" cy="89" rx="15" ry="9" fill="#346348" stroke="#183324" stroke-width="1.2"/>
+          <ellipse cx="70" cy="89" rx="9" ry="4" fill="none" stroke="#94C2A5" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <path d="M58 88 C52 68, 48 54, 52 44 M70 86 C70 64, 70 46, 70 32 M82 88 C88 68, 92 54, 88 46" stroke="#7A4254" stroke-width="2" fill="none"/>
+          <g transform="translate(52, 44)">
+            <path d="M0 0 C-10 -12, -8 -24, -1 -20 C2 -26, 10 -14, 0 0Z" fill="#C73E73" stroke="#8E244D" stroke-width="1"/>
+            <path d="M0 0 C-13 -4, -15 -14, -7 -16 Z" fill="#DF5C8E"/>
+            <path d="M0 0 C13 -4, 15 -14, 7 -16 Z" fill="#DF5C8E"/>
+          </g>
+          <g transform="translate(70, 32)">
+            <path d="M0 0 C-11 -14, -9 -26, -1 -22 C3 -28, 12 -15, 0 0Z" fill="#B53264" stroke="#851E45" stroke-width="1"/>
+            <path d="M0 0 C-14 -5, -16 -16, -7 -17 Z" fill="#DB5588"/>
+            <path d="M0 0 C14 -5, 16 -16, 7 -17 Z" fill="#DB5588"/>
+          </g>
+          <g transform="translate(88, 46)">
+            <path d="M0 0 C-10 -12, -8 -23, -1 -19 C2 -25, 10 -13, 0 0Z" fill="#C73E73" stroke="#8E244D" stroke-width="1"/>
+            <path d="M0 0 C-12 -4, -14 -13, -6 -15 Z" fill="#DF5C8E"/>
+            <path d="M0 0 C12 -4, 14 -13, 6 -15 Z" fill="#DF5C8E"/>
+          </g>
+        `,
+        azalea: `
+          ${pot}
+          <path d="M70 101 L70 82" stroke="#5A4232" stroke-width="4"/>
+          <circle cx="52" cy="70" r="20" fill="#2A543B"/>
+          <circle cx="88" cy="70" r="20" fill="#2A543B"/>
+          <circle cx="70" cy="54" r="24" fill="#356649"/>
+          <circle cx="46" cy="54" r="14" fill="#3E7555"/>
+          <circle cx="94" cy="54" r="14" fill="#3E7555"/>
+          <g transform="translate(50, 56)">
+            <circle cx="0" cy="-6" r="6" fill="#EE7E96"/><circle cx="-6" cy="2" r="6" fill="#F49AAD"/><circle cx="6" cy="2" r="6" fill="#F49AAD"/><circle cx="0" cy="5" r="5" fill="#E46580"/>
+            <circle cx="0" cy="0" r="2.2" fill="#FFE680"/>
+          </g>
+          <g transform="translate(88, 58)">
+            <circle cx="0" cy="-6" r="6" fill="#EE7E96"/><circle cx="-6" cy="2" r="6" fill="#F49AAD"/><circle cx="6" cy="2" r="6" fill="#F49AAD"/><circle cx="0" cy="5" r="5" fill="#E46580"/>
+            <circle cx="0" cy="0" r="2.2" fill="#FFE680"/>
+          </g>
+          <g transform="translate(70, 38)">
+            <circle cx="0" cy="-7" r="7" fill="#F2899F"/><circle cx="-7" cy="2" r="7" fill="#F8A9BA"/><circle cx="7" cy="2" r="7" fill="#F8A9BA"/><circle cx="0" cy="6" r="6" fill="#E46580"/>
+            <circle cx="0" cy="0" r="2.5" fill="#FFE680"/>
+          </g>
+          <g transform="translate(69, 72)">
+            <circle cx="0" cy="-5" r="5.5" fill="#EE7E96"/><circle cx="-5" cy="2" r="5.5" fill="#F49AAD"/><circle cx="5" cy="2" r="5.5" fill="#F49AAD"/>
+            <circle cx="0" cy="0" r="2" fill="#FFE680"/>
+          </g>
+        `,
+        geranium: `
+          ${pot}
+          <path d="M70 101 L70 50 M70 84 L48 68 M70 80 L92 68" stroke="#3D6E4F" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="46" cy="76" r="14" fill="#3C7352" stroke="#214031" stroke-width="1.3"/>
+          <circle cx="46" cy="76" r="9" fill="none" stroke="#274A35" stroke-width="2.5" opacity="0.55"/>
+          <circle cx="94" cy="76" r="14" fill="#3C7352" stroke="#214031" stroke-width="1.3"/>
+          <circle cx="94" cy="76" r="9" fill="none" stroke="#274A35" stroke-width="2.5" opacity="0.55"/>
+          <circle cx="70" cy="86" r="13" fill="#2F5D42" stroke="#214031" stroke-width="1.3"/>
+          <g transform="translate(70, 40)">
+            <circle cx="-12" cy="4" r="9" fill="#CE4336"/>
+            <circle cx="12" cy="4" r="9" fill="#CE4336"/>
+            <circle cx="-7" cy="-8" r="9" fill="#E35648"/>
+            <circle cx="7" cy="-8" r="9" fill="#E35648"/>
+            <circle cx="0" cy="10" r="8.5" fill="#D94B3E"/>
+            <circle cx="0" cy="-1" r="10" fill="#ED6658"/>
+            <circle cx="-12" cy="4" r="2" fill="#FFE29A"/><circle cx="12" cy="4" r="2" fill="#FFE29A"/>
+            <circle cx="-7" cy="-8" r="2" fill="#FFE29A"/><circle cx="7" cy="-8" r="2" fill="#FFE29A"/>
+            <circle cx="0" cy="-1" r="2.2" fill="#FFE29A"/>
+          </g>
+        `,
+        balsamin: `
+          ${pot}
+          <path d="M70 101 L70 34 M70 84 L50 66 M70 76 L90 60" stroke="#5D946E" stroke-width="3.2" stroke-linecap="round"/>
+          <ellipse cx="44" cy="74" rx="16" ry="7" transform="rotate(-24 44 74)" fill="#3F7855" stroke="#214031" stroke-width="1.2"/>
+          <ellipse cx="96" cy="72" rx="16" ry="7" transform="rotate(24 96 72)" fill="#3F7855" stroke="#214031" stroke-width="1.2"/>
+          <ellipse cx="48" cy="52" rx="14" ry="6.5" transform="rotate(-18 48 52)" fill="#4D8A65" stroke="#214031" stroke-width="1.2"/>
+          <ellipse cx="92" cy="50" rx="14" ry="6.5" transform="rotate(18 92 50)" fill="#4D8A65" stroke="#214031" stroke-width="1.2"/>
+          <ellipse cx="70" cy="34" rx="7" ry="14" fill="#5CA077" stroke="#214031" stroke-width="1.2"/>
+          <g transform="translate(56, 62)">
+            <circle cx="0" cy="-5" r="5" fill="#E85374"/><circle cx="5" cy="0" r="5" fill="#F2728E"/><circle cx="0" cy="5" r="5" fill="#E85374"/><circle cx="-5" cy="0" r="5" fill="#F2728E"/>
+            <circle cx="0" cy="0" r="2" fill="#FFF3B0"/>
+          </g>
+          <g transform="translate(84, 58)">
+            <circle cx="0" cy="-5" r="5" fill="#E85374"/><circle cx="5" cy="0" r="5" fill="#F2728E"/><circle cx="0" cy="5" r="5" fill="#E85374"/><circle cx="-5" cy="0" r="5" fill="#F2728E"/>
+            <circle cx="0" cy="0" r="2" fill="#FFF3B0"/>
+          </g>
+          <g transform="translate(70, 44)">
+            <circle cx="0" cy="-6" r="5.5" fill="#E85374"/><circle cx="6" cy="0" r="5.5" fill="#F2728E"/><circle cx="0" cy="6" r="5.5" fill="#E85374"/><circle cx="-6" cy="0" r="5.5" fill="#F2728E"/>
+            <circle cx="0" cy="0" r="2.2" fill="#FFF3B0"/>
+          </g>
+        `,
+        ivy: `
+          ${pot}
+          <path d="M68 101 C56 76, 40 70, 34 118 M72 101 C86 72, 102 74, 108 124 M70 101 C68 68, 76 42, 64 26" stroke="#2B523B" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <polygon points="64,22 73,34 67,38 61,38 55,34" fill="#467E5D" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="75,48 86,58 80,64 72,64 67,56" fill="#36664A" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="50,64 60,76 53,82 45,80 41,72" fill="#467E5D" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="94,74 105,84 99,90 91,89 86,82" fill="#3E7254" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="36,94 45,104 39,110 31,109 27,101" fill="#2E5940" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="34,114 42,124 36,129 29,128 26,121" fill="#3E7254" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="105,102 115,112 109,118 101,117 97,109" fill="#2E5940" stroke="#214031" stroke-width="1.2"/>
+          <polygon points="107,120 116,130 110,135 103,134 100,127" fill="#467E5D" stroke="#214031" stroke-width="1.2"/>
+        `,
+        fern: `
+          ${pot}
+          <path d="M70 101 C58 70, 38 48, 22 40" stroke="#2B573D" stroke-width="2.4" fill="none"/>
+          <path d="M70 101 C82 70, 102 48, 118 40" stroke="#2B573D" stroke-width="2.4" fill="none"/>
+          <path d="M70 101 C68 62, 68 38, 70 18" stroke="#3B7252" stroke-width="2.6" fill="none"/>
+          <path d="M70 101 C50 82, 30 78, 18 82" stroke="#3B7252" stroke-width="2.2" fill="none"/>
+          <path d="M70 101 C90 82, 110 78, 122 82" stroke="#3B7252" stroke-width="2.2" fill="none"/>
+          <ellipse cx="46" cy="60" rx="11" ry="4" transform="rotate(-44 46 60)" fill="#46805E"/>
+          <ellipse cx="36" cy="50" rx="10" ry="3.5" transform="rotate(-42 36 50)" fill="#52916C"/>
+          <ellipse cx="94" cy="60" rx="11" ry="4" transform="rotate(44 94 60)" fill="#46805E"/>
+          <ellipse cx="104" cy="50" rx="10" ry="3.5" transform="rotate(42 104 50)" fill="#52916C"/>
+          <ellipse cx="70" cy="48" rx="4.5" ry="15" fill="#4A8864"/>
+          <ellipse cx="62" cy="54" rx="10" ry="3.5" transform="rotate(-22 62 54)" fill="#5AA077"/>
+          <ellipse cx="78" cy="54" rx="10" ry="3.5" transform="rotate(22 78 54)" fill="#5AA077"/>
+          <ellipse cx="64" cy="36" rx="8" ry="3" transform="rotate(-20 64 36)" fill="#5AA077"/>
+          <ellipse cx="76" cy="36" rx="8" ry="3" transform="rotate(20 76 36)" fill="#5AA077"/>
+          <ellipse cx="42" cy="82" rx="9" ry="3.5" transform="rotate(-12 42 82)" fill="#386B4D"/>
+          <ellipse cx="98" cy="82" rx="9" ry="3.5" transform="rotate(12 98 82)" fill="#386B4D"/>
+        `,
+        nymphaea: `
+          <ellipse cx="70" cy="134" rx="34" ry="7" fill="rgba(33, 64, 49, 0.14)"/>
+          <path d="M24 106 L116 106 C112 128, 96 135, 70 135 C44 135, 28 128, 24 106Z" fill="#6F9A93" stroke="#456B65" stroke-width="2"/>
+          <ellipse cx="70" cy="106" rx="46" ry="11" fill="#A9CFC8" stroke="#456B65" stroke-width="2"/>
+          <ellipse cx="46" cy="104" rx="18" ry="6.5" fill="#3B6E51" stroke="#214031" stroke-width="1.2"/>
+          <ellipse cx="96" cy="106" rx="15" ry="5.5" fill="#2E5940" stroke="#214031" stroke-width="1.2"/>
+          <g transform="translate(70, 96)">
+            <path d="M0 8 C-24 2, -28 -14, -14 -18 C-6 -8, -2 0, 0 8Z" fill="#F2E7D8" stroke="#C9B9A1" stroke-width="1.2"/>
+            <path d="M0 8 C24 2, 28 -14, 14 -18 C6 -8, 2 0, 0 8Z" fill="#F2E7D8" stroke="#C9B9A1" stroke-width="1.2"/>
+            <path d="M0 8 C-16 -2, -16 -24, -4 -28 C0 -14, 0 -2, 0 8Z" fill="#FFFDF9" stroke="#C9B9A1" stroke-width="1.2"/>
+            <path d="M0 8 C16 -2, 16 -24, 4 -28 C0 -14, 0 -2, 0 8Z" fill="#FFFDF9" stroke="#C9B9A1" stroke-width="1.2"/>
+            <path d="M0 8 C-10 -8, -8 -28, 0 -32 C8 -28, 10 -8, 0 8Z" fill="#FFFFFF" stroke="#D1C2AA" stroke-width="1.2"/>
+            <circle cx="0" cy="-8" r="5" fill="#ECC04C"/>
+          </g>
+        `,
+        cryptomeria: `
+          ${pot}
+          <path d="M70 101 L70 84" stroke="#644A36" stroke-width="5" stroke-linecap="round"/>
+          <polygon points="70,50 34,90 106,90" fill="#234733" stroke="#163022" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="70,36 39,74 101,74" fill="#2E5B42" stroke="#163022" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="70,22 46,56 94,56" fill="#396E50" stroke="#163022" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="70,12 55,36 85,36" fill="#478260" stroke="#163022" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M62 70 L70 64 L78 70 M64 52 L70 46 L76 52" stroke="#6BA383" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        `
+      };
+
+      return `<svg viewBox="0 0 140 150" fill="none" xmlns="http://www.w3.org/2000/svg">${models[id] || pot}</svg>`;
+    }
+
+    const state = {
+      selectedBySill: {},
+      viewingPlantId: null,
+      finalViewingPlantId: null
+    };
+
+    function findPlantById(plantId) {
+      for (const sill of SILLS) {
+        const plant = sill.plants.find(p => p.id === plantId);
+        if (plant) return { sill, plant };
+      }
+      return null;
+    }
+
+    function selectedCount() {
+      return Object.keys(state.selectedBySill).length;
+    }
+
+    function goToScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      if (target) target.classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    function selectPlant(sillId, plantId) {
+      state.selectedBySill[sillId] = plantId;
+      state.viewingPlantId = plantId;
+      renderGame();
+    }
+
+    function resetGame() {
+      state.selectedBySill = {};
+      state.viewingPlantId = null;
+      state.finalViewingPlantId = null;
+      renderGame();
+    }
+
+    function renderGame() {
+      renderProgressSteps();
+      renderSills();
+      renderShowcase();
+    }
+
+    function renderProgressSteps() {
+      const wrap = document.getElementById('progress-steps');
+      const count = selectedCount();
+
+      wrap.innerHTML = `
+        <span>Собрано: ${count}/4</span>
+        ${SILLS.map(s => {
+          const done = Boolean(state.selectedBySill[s.id]);
+          return `<span class="step-dot ${done ? 'done' : ''}" title="${s.title}">${done ? '✓' : s.id}</span>`;
+        }).join('')}
+      `;
+
+      const btn = document.getElementById('open-greenhouse-btn');
+      const hint = document.getElementById('ready-hint');
+
+      if (count === 4) {
+        btn.disabled = false;
+        btn.className = 'btn btn-gold';
+        hint.textContent = 'Все 4 растения выбраны — оранжерея готова!';
+        hint.className = 'ready-hint ready';
+      } else {
+        btn.disabled = true;
+        btn.className = 'btn btn-primary';
+        hint.textContent = `Осталось выбрать с подоконников: ${4 - count}`;
+        hint.className = 'ready-hint';
+      }
+    }
+
+    function renderSills() {
+      const container = document.getElementById('sills-container');
+      container.innerHTML = '';
+
+      SILLS.forEach(sill => {
+        const block = document.createElement('div');
+        block.className = 'sill-block';
+
+        const chosenId = state.selectedBySill[sill.id];
+        const chosenPlant = chosenId ? sill.plants.find(p => p.id === chosenId) : null;
+
+        block.innerHTML = `
+          <div class="sill-title">
+            <span>${sill.title}</span>
+            <span>${chosenPlant ? '✓ ' + chosenPlant.name : 'не выбрано'}</span>
+          </div>
+        `;
+
+        const cardsWrap = document.createElement('div');
+        cardsWrap.className = 'sill-cards';
+
+        sill.plants.forEach(plant => {
+          const isSelected = chosenId === plant.id;
+          const isViewing = state.viewingPlantId === plant.id;
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'plant-card' + (isSelected ? ' selected' : '') + (isViewing ? ' viewing' : '');
+          btn.addEventListener('click', () => selectPlant(sill.id, plant.id));
+
+          btn.innerHTML = `
+            <span class="card-check">✓</span>
+            <div class="card-icon">${getPlantSvg(plant.id)}</div>
+            <div class="card-name">${plant.name}</div>
+          `;
+          cardsWrap.appendChild(btn);
+        });
+
+        block.appendChild(cardsWrap);
+        container.appendChild(block);
+      });
+    }
+
+    function renderShowcase() {
+      const box = document.getElementById('showcase-content');
+
+      if (!state.viewingPlantId) {
+        box.innerHTML = `
+          <div class="showcase-empty">
+            <div class="showcase-empty-arch">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <path d="M32 52 V28 M32 38 C22 36, 18 28, 22 22 C28 24, 31 30, 32 38Z M32 34 C42 32, 46 24, 42 18 C36 20, 33 26, 32 34Z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="showcase-empty-title">Выбери растение слева</div>
+            <p>Здесь в большом окне появится сам цветок и его литературная история. Когда выберешь по растению с каждого из 4 подоконников — откроется твоя оранжерея.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const found = findPlantById(state.viewingPlantId);
+      if (!found) return;
+      const { sill, plant } = found;
+
+      box.innerHTML = `
+        <div class="showcase-body">
+          <div class="showcase-model-box">
+            <span class="showcase-sill-tag">${sill.title}</span>
+            <div class="showcase-arch-bg">${getPlantSvg(plant.id)}</div>
+          </div>
+
+          <div class="showcase-story">
+            <div class="story-header">
+              <h3 class="story-title">${plant.fullTitle}</h3>
+              <span class="story-poet">${plant.poet}</span>
+            </div>
+            <p class="story-main">${plant.main}</p>
+            <div class="story-kushlina">
+              <strong>Из книги Кушлиной:</strong> ${plant.kushlina}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFinalGreenhouse() {
+      const slotsEl = document.getElementById('final-slots');
+      const drawer = document.getElementById('final-story-drawer');
+      slotsEl.innerHTML = '';
+
+      SILLS.forEach(sill => {
+        const plantId = state.selectedBySill[sill.id];
+        if (!plantId) return;
+        const { plant } = findPlantById(plantId);
+
+        const card = document.createElement('div');
+        card.className = 'final-plant-card' + (state.finalViewingPlantId === plant.id ? ' active-card' : '');
+        card.addEventListener('click', () => {
+          state.finalViewingPlantId = state.finalViewingPlantId === plant.id ? null : plant.id;
+          renderFinalGreenhouse();
+        });
+
+        card.innerHTML = `
+          <div class="final-sill-label">${sill.shortTitle}</div>
+          <div class="final-plant-svg">${getPlantSvg(plant.id)}</div>
+          <div class="final-plant-name">${plant.name}</div>
+          <div class="final-plant-poet">${plant.poet}</div>
+        `;
+        slotsEl.appendChild(card);
+      });
+
+      if (state.finalViewingPlantId) {
+        const { sill, plant } = findPlantById(state.finalViewingPlantId);
+        drawer.className = 'final-story-drawer open';
+        drawer.innerHTML = `
+          <div class="story-header">
+            <h3 class="story-title">${plant.fullTitle} <small style="font-size:13px;color:var(--green-soft);font-family:var(--sans);font-weight:600;">(${sill.shortTitle})</small></h3>
+            <span class="story-poet">${plant.poet}</span>
+          </div>
+          <p class="story-main">${plant.main}</p>
+          <div class="story-kushlina">
+            <strong>Из книги Кушлиной:</strong> ${plant.kushlina}
+          </div>
+        `;
+      } else {
+        drawer.className = 'final-story-drawer';
+        drawer.innerHTML = '';
+      }
+    }
+
+    function renderExtraPlants() {
+      const grid = document.getElementById('extra-grid');
+      grid.innerHTML = EXTRA_PLANTS.map(item => `
+        <article class="extra-card">
+          <h3 class="extra-card-title">${item.name}</h3>
+          <p class="extra-card-text">${item.text}</p>
+        </article>
+      `).join('');
+    }
+
+    document.getElementById('btn-start').addEventListener('click', () => goToScreen('screen-rules'));
+    document.getElementById('btn-to-cover').addEventListener('click', () => goToScreen('screen-cover'));
+    document.getElementById('btn-to-game').addEventListener('click', () => goToScreen('screen-game'));
+    document.getElementById('btn-rules-top').addEventListener('click', () => goToScreen('screen-rules'));
+    document.getElementById('btn-reset').addEventListener('click', resetGame);
+    document.getElementById('open-greenhouse-btn').addEventListener('click', () => {
+      if (selectedCount() < 4) return;
+      state.finalViewingPlantId = null;
+      renderFinalGreenhouse();
+      goToScreen('screen-greenhouse');
+    });
+    document.getElementById('btn-edit-choice').addEventListener('click', () => goToScreen('screen-game'));
+    document.getElementById('btn-new-gh').addEventListener('click', () => {
+      resetGame();
+      goToScreen('screen-game');
+    });
+    document.getElementById('btn-to-extra').addEventListener('click', () => goToScreen('screen-extra'));
+    document.getElementById('btn-back-extra').addEventListener('click', () => {
+      if (selectedCount() === 4) {
+        renderFinalGreenhouse();
+        goToScreen('screen-greenhouse');
+      } else {
+        goToScreen('screen-game');
+      }
+    });
+
+    renderGame();
+    renderExtraPlants();
+  </script>
+</body>
+</html>
